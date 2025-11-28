@@ -10,7 +10,7 @@
             entry.className = "border-l-2 border-green-500 pl-2";
             entry.innerHTML = `<span class="text-slate-500 text-xs">[${time}]</span> <span class="text-green-300">${message}</span>`;
             logger.prepend(entry);
-            console.log(`[QA DOJO] ${message}`);
+            console.log(`[QA engineer intern] ${message}`);
         }
 
         function clearLog() {
