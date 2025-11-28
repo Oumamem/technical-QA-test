@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QA Automation Dojo v2.0</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        .logger-scroll::-webkit-scrollbar { width: 8px; }
+        .logger-scroll::-webkit-scrollbar-track { background: #1e293b; }
+        .logger-scroll::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #3b82f6; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
+
+        .hover-reveal-content { display: none; }
+        .hover-container:hover .hover-reveal-content { display: block; }
+        
+        /* Modal Backdrop */
+        .modal-backdrop { background-color: rgba(0, 0, 0, 0.5); }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen flex flex-col relative">
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed top-4 right-4 z-[100] space-y-2"></div>
+
+    <!-- LOGIN PAGE (Overlay) -->
+    <div id="login-view" class="fixed inset-0 bg-slate-900 z-50 flex items-center justify-center">
+        <div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-md">
+            <div class="text-center mb-6">
+                <i class="ph ph-robot text-5xl text-blue-600"></i>
+                <h2 class="text-2xl font-bold text-slate-800 mt-2">QA Dojo Login</h2>
+                <p class="text-slate-500 text-sm">Use <code class="bg-slate-100 px-1 rounded">admin</code> / <code class="bg-slate-100 px-1 rounded">password123</code></p>
+            </div>
+            <form id="login-form" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Username</label>
+                    <input type="text" id="username" class="w-full p-2 border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="Enter username">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Password</label>
+                    <input type="password" id="password" class="w-full p-2 border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="••••••••">
+                </div>
+                <div id="login-error" class="text-red-500 text-sm hidden flex items-center gap-2">
+                    <i class="ph ph-warning-circle"></i> Invalid credentials
+                </div>
+                <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition font-semibold">Sign In</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- APP LAYOUT (Hidden until login) -->
+    <div id="app-layout" class="flex flex-col min-h-screen hidden">
+        
+        <!-- Navbar -->
+        <nav class="bg-slate-900 text-white p-4 shadow-lg sticky top-0 z-40">
+            <div class="max-w-7xl mx-auto flex justify-between items-center">
+                <div class="flex items-center gap-2">
+                    <i class="ph ph-robot text-3xl text-blue-400"></i>
+                    <h1 class="text-xl font-bold tracking-wider">QA DOJO <span class="text-xs font-normal text-slate-400">Training Ground</span></h1>
+                </div>
+                <div class="flex items-center gap-6">
+                    <div class="flex items-center gap-2 text-sm text-slate-300">
+                        <i class="ph ph-user-circle text-lg"></i>
+                        <span id="user-display">Guest</span>
+                    </div>
+                    <button onclick="logout()" class="text-sm text-red-400 hover:text-red-300">Logout</button>
+                </div>
+            </div>
+        </nav>
+
+        <div class="flex flex-1 max-w-7xl mx-auto w-full p-4 gap-6">
+            
+            <!-- Sidebar Navigation -->
+            <aside class="hidden md:block w-64 flex-shrink-0">
+                <div class="bg-white rounded-xl shadow-sm p-4 sticky top-24">
+                    <h3 class="font-bold text-slate-700 mb-4 border-b pb-2">Menu</h3>
+                    <ul class="space-y-1 text-sm">
+                        <li><button onclick="showSection('dashboard')" class="w-full text-left p-2 rounded hover:bg-blue-50 text-slate-600 hover:text-blue-600 transition flex items-center gap-2"><i class="ph ph-squares-four"></i> Dashboard</button></li>
+                        <li><button onclick="showSection('shop')" class="w-full text-left p-2 rounded hover:bg-blue-50 text-slate-600 hover:text-blue-600 transition flex items-center gap-2"><i class="ph ph-shopping-cart"></i> Shop & Cart</button></li>
+                        <li><button onclick="showSection('tables')" class="w-full text-left p-2 rounded hover:bg-blue-50 text-slate-600 hover:text-blue-600 transition flex items-center gap-2"><i class="ph ph-table"></i> Sortable Tables</button></li>
+                        <li><button onclick="showSection('ui-elements')" class="w-full text-left p-2 rounded hover:bg-blue-50 text-slate-600 hover:text-blue-600 transition flex items-center gap-2"><i class="ph ph-sliders"></i> UI Elements</button></li>
+                        <li><button onclick="showSection('advanced')" class="w-full text-left p-2 rounded hover:bg-blue-50 text-slate-600 hover:text-blue-600 transition flex items-center gap-2"><i class="ph ph-skull"></i> Tricky Stuff</button></li>
+                    </ul>
+                </div>
+            </aside>
+
+            <!-- Main Content Area -->
+            <main class="flex-1 pb-20 relative">
+
+                <!-- VIEW: DASHBOARD -->
+                <div id="section-dashboard" class="app-section space-y-6">
+                    <h2 class="text-2xl font-bold text-slate-800">Dashboard</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="bg-blue-500 text-white p-6 rounded-xl shadow-sm">
+                            <h3 class="text-lg font-semibold">Total Orders</h3>
+                            <p class="text-3xl font-bold mt-2" id="stat-orders">0</p>
+                        </div>
+                        <div class="bg-emerald-500 text-white p-6 rounded-xl shadow-sm">
+                            <h3 class="text-lg font-semibold">Tasks Pending</h3>
+                            <p class="text-3xl font-bold mt-2" id="stat-tasks">2</p>
+                        </div>
+                        <div class="bg-purple-500 text-white p-6 rounded-xl shadow-sm">
+                            <h3 class="text-lg font-semibold">User Level</h3>
+                            <p class="text-3xl font-bold mt-2">Intern</p>
+                        </div>
+                    </div>
+
+                    <!-- Dynamic Todo List -->
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                        <h3 class="text-lg font-bold mb-4 flex items-center gap-2"><i class="ph ph-check-square"></i> Todo List</h3>
+                        <div class="flex gap-2 mb-4">
+                            <input type="text" id="new-todo" class="flex-1 p-2 border border-slate-300 rounded outline-none focus:border-blue-500" placeholder="Add a new task...">
+                            <button onclick="addTodo()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Add</button>
+                        </div>
+                        <ul id="todo-list" class="space-y-2">
+                            <li class="flex justify-between items-center p-3 bg-slate-50 rounded border border-slate-100 group">
+                                <span class="todo-text">Check Email</span>
+                                <button onclick="removeTodo(this)" class="text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition"><i class="ph ph-trash"></i></button>
+                            </li>
+                            <li class="flex justify-between items-center p-3 bg-slate-50 rounded border border-slate-100 group">
+                                <span class="todo-text">Update Jira</span>
+                                <button onclick="removeTodo(this)" class="text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition"><i class="ph ph-trash"></i></button>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- VIEW: SHOP -->
+                <div id="section-shop" class="app-section space-y-6 hidden">
+                    <h2 class="text-2xl font-bold text-slate-800 flex justify-between items-center">
+                        Shop
+                        <span class="text-sm font-normal bg-slate-200 px-3 py-1 rounded-full">Cart: <span id="cart-count">0</span> items</span>
+                    </h2>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <!-- Product 1 -->
+                        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col">
+                            <div class="h-32 bg-slate-100 rounded-lg mb-4 flex items-center justify-center text-slate-300"><i class="ph ph-laptop text-4xl"></i></div>
+                            <h3 class="font-bold text-lg">Gaming Laptop</h3>
+                            <p class="text-slate-500 text-sm mb-4">$1200.00</p>
+                            <button onclick="addToCart('Gaming Laptop', 1200)" class="mt-auto w-full bg-slate-900 text-white py-2 rounded hover:bg-slate-800 transition">Add to Cart</button>
+                        </div>
+                        <!-- Product 2 -->
+                        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col">
+                            <div class="h-32 bg-slate-100 rounded-lg mb-4 flex items-center justify-center text-slate-300"><i class="ph ph-headphones text-4xl"></i></div>
+                            <h3 class="font-bold text-lg">Noise Cancelling Headphones</h3>
+                            <p class="text-slate-500 text-sm mb-4">$250.00</p>
+                            <button onclick="addToCart('Headphones', 250)" class="mt-auto w-full bg-slate-900 text-white py-2 rounded hover:bg-slate-800 transition">Add to Cart</button>
+                        </div>
+                        <!-- Product 3 -->
+                        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col">
+                            <div class="h-32 bg-slate-100 rounded-lg mb-4 flex items-center justify-center text-slate-300"><i class="ph ph-mouse text-4xl"></i></div>
+                            <h3 class="font-bold text-lg">Wireless Mouse</h3>
+                            <p class="text-slate-500 text-sm mb-4">$45.00</p>
+                            <button onclick="addToCart('Mouse', 45)" class="mt-auto w-full bg-slate-900 text-white py-2 rounded hover:bg-slate-800 transition">Add to Cart</button>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                        <h3 class="font-bold text-slate-700 mb-2">Cart Summary</h3>
+                        <ul id="cart-items" class="text-sm text-slate-600 mb-4 space-y-1">
+                            <li class="italic text-slate-400 empty-msg">Your cart is empty</li>
+                        </ul>
+                        <div class="flex justify-between items-center font-bold text-lg border-t border-slate-200 pt-2">
+                            <span>Total:</span>
+                            <span id="cart-total">$0.00</span>
+                        </div>
+                        <button onclick="checkout()" class="w-full mt-4 bg-green-600 text-white py-2 rounded hover:bg-green-700 transition">Checkout</button>
+                    </div>
+                </div>
+
+                <!-- VIEW: TABLES -->
+                <div id="section-tables" class="app-section space-y-6 hidden">
+                    <h2 class="text-2xl font-bold text-slate-800">Sortable & Filterable Data</h2>
+                    
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
+                            <input type="text" id="table-search" onkeyup="filterTable()" placeholder="Search users..." class="p-2 border border-slate-300 rounded text-sm w-64">
+                            <span class="text-xs text-slate-500">Click headers to sort</span>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm text-slate-600" id="users-table">
+                                <thead class="bg-slate-100 text-slate-900 font-bold uppercase text-xs cursor-pointer select-none">
+                                    <tr>
+                                        <th class="p-4 hover:bg-slate-200" onclick="sortTable(0)">ID <i class="ph ph-caret-up-down ml-1"></i></th>
+                                        <th class="p-4 hover:bg-slate-200" onclick="sortTable(1)">Name <i class="ph ph-caret-up-down ml-1"></i></th>
+                                        <th class="p-4 hover:bg-slate-200" onclick="sortTable(2)">Role <i class="ph ph-caret-up-down ml-1"></i></th>
+                                        <th class="p-4 hover:bg-slate-200" onclick="sortTable(3)">Status <i class="ph ph-caret-up-down ml-1"></i></th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100">
+                                    <tr><td class="p-4">101</td><td class="p-4">Alice Johnson</td><td class="p-4">Admin</td><td class="p-4"><span class="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs">Active</span></td></tr>
+                                    <tr><td class="p-4">104</td><td class="p-4">Bob Smith</td><td class="p-4">Editor</td><td class="p-4"><span class="bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full text-xs">Pending</span></td></tr>
+                                    <tr><td class="p-4">102</td><td class="p-4">Charlie Brown</td><td class="p-4">Viewer</td><td class="p-4"><span class="bg-red-100 text-red-700 px-2 py-1 rounded-full text-xs">Inactive</span></td></tr>
+                                    <tr><td class="p-4">105</td><td class="p-4">David Wilson</td><td class="p-4">Editor</td><td class="p-4"><span class="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs">Active</span></td></tr>
+                                    <tr><td class="p-4">103</td><td class="p-4">Eve Davis</td><td class="p-4">Admin</td><td class="p-4"><span class="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs">On Leave</span></td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VIEW: UI ELEMENTS -->
+                <div id="section-ui-elements" class="app-section space-y-6 hidden">
+                    <h2 class="text-2xl font-bold text-slate-800">Interactive Elements</h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Dropdown -->
+                        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                            <h3 class="font-bold mb-4">Dropdown Menu</h3>
+                            <div class="relative inline-block text-left">
+                                <button onclick="toggleDropdown()" id="dropdown-btn" class="inline-flex justify-center w-full rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none">
+                                    Options
+                                    <i class="ph ph-caret-down ml-2 -mr-1 text-lg"></i>
+                                </button>
+                                <div id="dropdown-menu" class="origin-top-right absolute left-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 hidden z-10">
+                                    <div class="py-1" role="menu">
+                                        <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem" onclick="selectOption('Profile')">Profile</a>
+                                        <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem" onclick="selectOption('Settings')">Settings</a>
+                                        <a href="#" class="block px-4 py-2 text-sm text-red-700 hover:bg-gray-100" role="menuitem" onclick="selectOption('Delete')">Delete</a>
+                                    </div>
+                                </div>
+                                <p class="mt-2 text-sm text-slate-500">Selected: <span id="dropdown-selected" class="font-bold">None</span></p>
+                            </div>
+                        </div>
+
+                        <!-- Slider -->
+                        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                            <h3 class="font-bold mb-4">Range Slider</h3>
+                            <label for="volume" class="block text-sm font-medium text-gray-700">Volume Level</label>
+                            <input type="range" id="volume" name="volume" min="0" max="100" value="50" oninput="updateRangeValue(this.value)" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer mt-2">
+                            <p class="mt-2 text-sm text-slate-500">Value: <span id="range-value" class="font-bold">50</span></p>
+                        </div>
+
+                        <!-- Modal Trigger -->
+                        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                            <h3 class="font-bold mb-4">Modal Dialog</h3>
+                            <button onclick="openModal()" id="open-modal-btn" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 transition">Launch Modal</button>
+                        </div>
+
+                        <!-- Date Picker -->
+                        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                            <h3 class="font-bold mb-4">Date Picker</h3>
+                            <input type="date" id="datepicker" class="p-2 border border-slate-300 rounded w-full">
+                            <p class="text-xs text-slate-400 mt-2">Standard HTML5 Date Input</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VIEW: ADVANCED (Original Challenges) -->
+                <div id="section-advanced" class="app-section space-y-6 hidden">
+                    <div class="bg-orange-100 border-l-4 border-orange-500 text-orange-700 p-4 mb-4" role="alert">
+                        <p class="font-bold">Warning</p>
+                        <p>These challenges are designed to be difficult. IDs change, elements hide, and shadows loom.</p>
+                    </div>
+
+                    <!-- Dynamic IDs -->
+                    <section id="dynamic" class="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+                        <h2 class="text-xl font-bold text-slate-800 mb-4">Dynamic Properties</h2>
+                        <div class="p-4 border border-slate-200 rounded-lg">
+                            <label class="flex items-center gap-3">
+                                <input type="checkbox" id="dynamic-replace-me" class="w-5 h-5 text-purple-600 rounded" onchange="logEvent('Dynamic ID Checkbox clicked')">
+                                <span id="dynamic-label-text">Checkbox with random ID</span>
+                            </label>
+                        </div>
+                    </section>
+
+                    <!-- Waits -->
+                    <section id="synchronization" class="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+                        <h2 class="text-xl font-bold text-slate-800 mb-4">Synchronization (Waits)</h2>
+                        <div class="flex gap-4 items-center mb-4">
+                            <button onclick="startLoad()" id="start-load-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded shadow transition">Start Process</button>
+                            <div id="loader" class="spinner hidden"></div>
+                        </div>
+                        <div id="delayed-container" class="hidden p-4 bg-green-50 border border-green-200 rounded-lg transition-all">
+                            <label class="flex items-center gap-3">
+                                <input type="checkbox" id="delayed-checkbox" class="w-5 h-5 text-green-600 rounded" onchange="logEvent('Delayed Checkbox clicked!')">
+                                <span class="font-medium text-green-800">I appear after 3 seconds</span>
+                            </label>
+                        </div>
+                    </section>
+
+                    <!-- Shadow DOM -->
+                    <section id="shadow" class="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+                        <h2 class="text-xl font-bold text-slate-800 mb-4">Shadow DOM</h2>
+                        <div id="shadow-host" class="p-6 bg-slate-800 rounded-lg text-white"></div>
+                    </section>
+
+                     <!-- Hover -->
+                     <section id="forms" class="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+                        <h2 class="text-xl font-bold text-slate-800 mb-4">Hover Reveal</h2>
+                        <div class="hover-container inline-block border border-blue-300 bg-blue-50 p-4 rounded group cursor-crosshair">
+                            <p class="font-bold text-blue-800 mb-2">Hover Mouse Here</p>
+                            <div class="hover-reveal-content bg-white p-3 rounded shadow-lg border border-slate-200">
+                                <label class="flex items-center gap-2">
+                                    <input type="checkbox" id="hover-checkbox" onchange="logEvent('Hover-dependent checkbox clicked')">
+                                    <span class="text-sm">I was hiding!</span>
+                                </label>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+
+            </main>
+
+            <!-- Logger Sidebar -->
+            <aside class="hidden xl:block w-80 flex-shrink-0">
+                <div class="bg-slate-900 text-green-400 rounded-xl shadow-lg p-4 sticky top-24 h-[calc(100vh-8rem)] flex flex-col font-mono text-sm">
+                    <div class="flex justify-between items-center border-b border-slate-700 pb-2 mb-2">
+                        <span class="font-bold text-white">Event Logger</span>
+                        <button onclick="clearLog()" class="text-xs text-slate-400 hover:text-white underline">Clear</button>
+                    </div>
+                    <div id="logger-content" class="overflow-y-auto flex-1 logger-scroll space-y-2">
+                        <div class="text-slate-500 italic">Waiting for interactions...</div>
+                    </div>
+                </div>
+            </aside>
+
+        </div>
+    </div>
+
+    <!-- MODAL COMPONENT (Hidden by default) -->
+    <div id="simple-modal" class="hidden fixed inset-0 z-[60] overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 modal-backdrop transition-opacity" aria-hidden="true" onclick="closeModal()"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <div class="sm:flex sm:items-start">
+                        <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 sm:mx-0 sm:h-10 sm:w-10">
+                            <i class="ph ph-info text-blue-600 text-xl"></i>
+                        </div>
+                        <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                            <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">Simple Modal</h3>
+                            <div class="mt-2">
+                                <p class="text-sm text-gray-500">This is a standard modal dialog. Automation scripts should check for visibility and click the action buttons below.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                    <button type="button" onclick="confirmModal()" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm">
+                        Confirm
+                    </button>
+                    <button type="button" onclick="closeModal()" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+<script src="script.js"></script>
+
+</body>
+</html>
