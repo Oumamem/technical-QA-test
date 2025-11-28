@@ -311,4 +311,21 @@
             shadowRoot.appendChild(div);
             host.addEventListener('shadow-click', () => logEvent('Shadow DOM Checkbox clicked'));
         });
+        // Challenge 7: Console Hacker
+        window.unlockSecretAgentMode = function() {
+            const badge = document.getElementById('secret-agent-badge');
+            const placeholder = document.getElementById('hacker-placeholder');
+            
+            if(badge && placeholder) {
+                badge.classList.remove('hidden');
+                badge.classList.add('secret-reveal');
+                placeholder.classList.add('hidden');
+                
+                logEvent('SYSTEM HACKED: Secret Agent Mode Unlocked');
+                console.log('%c ACCESS GRANTED ', 'background: #22c55e; color: #000; font-weight: bold; padding: 4px;');
+                console.log('Félicitations ! Vous avez trouvé la fonction cachée.');
+            } else {
+                console.error("Erreur : Impossible de trouver les éléments secrets dans le DOM.");
+            }
+        };
 
